@@ -1,57 +1,50 @@
-import requests
-from bs4 import BeautifulSoup
-import schedule
-import time
+import asyncio
 from pyppeteer import launch
+from bs4 import BeautifulSoup
 from telegram import Bot
 
-linkedin_url = "https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=3947524387&distance=25&f_TPR=a1718131920-&f_WT=2&geoId=106057199&keywords=Desenvolvedor%20full%20stack&origin=JOB_ALERT_IN_APP_NOTIFICATION&originToLandingJobPostings=3947524387&savedSearchId=3519597281&sortBy=R"
-telegram_token = ""
-chat_id = ""
+linkedin_url = "https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=3954919377&f_TPR=r86400&f_WT=2&geoId=106057199&keywords=Desenvolvedor%20full%20stack&origin=JOB_SEARCH_PAGE_SEARCH_BUTTON&refresh=true&sortBy=DD"
+telegram_token = "YOUR_TELEGRAM_BOT_TOKEN"  # Your Telegram bot token here
+chat_id = "YOUR_TELEGRAM_CHAT_ID"  # Your Telegram chat ID here
 
-def extract_jobs():
+
+async def fetch():
+    browser = await launch(
+        executablePath="C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    )
+    page = await browser.newPage()
+    await page.goto(linkedin_url)
+    content = await page.content()
+    await browser.close()
+    return content
+
+
+def extract_jobs(content):
     print("Extraindo vagas...")
     try:
-
-        async def fetch():
-            browser = await launch()
-            page = await browser.newPage()
-            await page.goto(linkedin_url)
-            content = await page.content()
-            await browser.close()
-            return content
-
-        content = None
-        
-        try:
-            content = fetch()
-        except Exception as e:
-            print("Erro ao carregar página com pyppeteer:", e)
-            return
-
         soup = BeautifulSoup(content, "html.parser")
+        jobs = soup.find_all("li", class_="job-card-list__job-card-container")
 
-        jobs = soup.find_all(
-            "li", class_="result-card job-result-card result-card--with-hover-state"
-        )
+        job_details = []
 
         for job in jobs:
-            job_title = job.find(
-                "h3", class_="result-card__title job-result-card__title"
-            ).text.strip()
+            job_title = job.find("a", class_="job-card-list__title").text.strip()
             company = job.find(
-                "a", class_="result-card__subtitle-link job-result-card__subtitle-link"
+                "span", class_="job-card-container__primary-description"
             ).text.strip()
-            location = job.find("span", class_="job-result-card__location").text.strip()
-            job_link = job.find("a", class_="result-card__full-card-link")["href"]
+            location = job.find(
+                "li", class_="job-card-container__metadata-item"
+            ).text.strip()
+            job_link = (
+                "https://www.linkedin.com"
+                + job.find("a", class_="job-card-list__title")["href"]
+            )
 
-            print(f"Vaga: {job_title}")
-            print(f"Empresa: {company}")
-            print(f"Localização: {location}")
-            print(f"Link: {job_link}")
-            print("\n")
+            job_details.append(
+                f"Vaga: {job_title}\nEmpresa: {company}\nLocalização: {location}\nLink: {job_link}\n"
+            )
 
-        #send_telegram_notification("Vagas extraídas com sucesso!")
+        message = "\n".join(job_details)
 
     except Exception as e:
         print("Erro durante extração de vagas:", e)
@@ -64,20 +57,20 @@ def send_telegram_notification(message):
 
 def job():
     print("Rodando script de coleta de dados...")
-    extract_jobs()
+    content = asyncio.run(fetch())
+    extract_jobs(content)
 
 
 def main():
-    # # Executar o job a cada 1 hora
-    # schedule.every(1).hour.do(job)
-
-    # Rodar o job imediatamente ao iniciar o script
+    # Executar o job imediatamente ao iniciar o script
     job()
 
-    # # Loop para manter o script em execução
+    # Loop para manter o script em execução (descomentado se desejado)
+    # schedule.every(1).hour.do(job)
     # while True:
     #     schedule.run_pending()
     #     time.sleep(1)
+
 
 if __name__ == "__main__":
     main()
