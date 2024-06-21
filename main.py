@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup
 from telegram import Bot
 
 linkedin_url = "https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=3954919377&f_TPR=r86400&f_WT=2&geoId=106057199&keywords=Desenvolvedor%20full%20stack&origin=JOB_SEARCH_PAGE_SEARCH_BUTTON&refresh=true&sortBy=DD"
-telegram_token = "YOUR_TELEGRAM_BOT_TOKEN"  # Your Telegram bot token here
-chat_id = "YOUR_TELEGRAM_CHAT_ID"  # Your Telegram chat ID here
+telegram_token = ""
+chat_id = ""
 
 
 async def fetch():
